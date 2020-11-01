@@ -16,12 +16,18 @@ export class FunctionLoader implements IFunctionLoader {
         func: Function
     }} = {};
 
-    load(functionId: string, metadata: rpc.IRpcFunctionMetadata): void {
+    async load(functionId: string, metadata: rpc.IRpcFunctionMetadata): Promise<void> {
       if (metadata.isProxy === true) {
           return;
       }
       let scriptFilePath = <string>(metadata && metadata.scriptFile);
-      let script = require(scriptFilePath);
+      let script: any;
+      if (scriptFilePath.endsWith(".mjs")) {
+        // use eval so it doesn't get compiled into a require()
+        script = await eval("import(scriptFilePath)");
+      } else {
+        script = require(scriptFilePath);
+      }
       let entryPoint = <string>(metadata && metadata.entryPoint);
       let userFunction = getEntryPoint(script, entryPoint);
       if(!isFunction(userFunction)) {
